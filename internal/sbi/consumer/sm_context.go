@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strconv"
 	"time"
-
+    "encoding/json"
 	"github.com/antihax/optional"
 
 	amf_context "github.com/free5gc/amf/internal/context"
@@ -63,7 +63,7 @@ func SelectSmf(
 	smContext.SetSnssai(snssai)
 	smContext.SetDnn(dnn)
 	smContext.SetAccessType(anType)
-
+	smContext.SetUserLocation(ue.Location)
 	if nsiInformation == nil {
 		ue.GmmLog.Warnf("nsiInformation is still nil, use default NRF[%s]", nrfUri)
 	} else {
@@ -177,7 +177,12 @@ func buildCreateSmContextRequest(ue *amf_context.AmfUe, smContext *amf_context.S
 	}
 	// TODO: location is used in roaming scenerio
 	// if ue.Location != nil {
-	// 	smContextCreateData.UeLocation = ue.Location
+	ueLocation := smContext.UserLocation()
+	smContextCreateData.UeLocation = &ueLocation
+	if smContextCreateData.UeLocation != nil {
+		jsonctx, _ := json.Marshal(smContextCreateData.UeLocation.NrLocation)
+		fmt.Println(string(jsonctx))
+	}
 	// }
 	smContextCreateData.UeTimeZone = ue.TimeZone
 	smContextCreateData.SmContextStatusUri = context.GetIPv4Uri() + "/namf-callback/v1/smContextStatus/" +
