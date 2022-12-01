@@ -282,6 +282,9 @@ func forward5GSMMessageToSMF(
 		N1SmMsg: &models.RefToBinaryData{
 			ContentId: "N1SmMsg",
 		},
+
+		SmContextStatusUri: fmt.Sprintf("%s/namf-callback/v1/smContextStatus/%s/%d",
+			ue.ServingAMF().GetIPv4Uri(), ue.Guti, pduSessionID),
 	}
 	smContextUpdateData.Pei = ue.Pei
 	smContextUpdateData.Gpsi = ue.Gpsi
