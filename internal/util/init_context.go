@@ -5,14 +5,14 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/free5gc/amf/internal/context"
+	ctx "github.com/free5gc/amf/internal/context"
 	"github.com/free5gc/amf/internal/logger"
 	"github.com/free5gc/amf/pkg/factory"
 	"github.com/free5gc/nas/security"
 	"github.com/free5gc/openapi/models"
 )
 
-func InitAmfContext(context *context.AMFContext) {
+func InitAmfContext(context *ctx.AMFContext) {
 	config := factory.AmfConfig
 	logger.UtilLog.Infof("amfconfig Info: Version[%s] Description[%s]", config.Info.Version, config.Info.Description)
 	configuration := config.Configuration
@@ -83,6 +83,16 @@ func InitAmfContext(context *context.AMFContext) {
 	context.T3565Cfg = configuration.T3565
 	context.T3570Cfg = configuration.T3570
 	context.Locality = configuration.Locality
+
+	for _, ladn := range configuration.SupportLADNList {
+		context.LadnPool[ladn.Dnn] = &ctx.LADN{
+			Dnn:      ladn.Dnn,
+			TaiLists: ladn.TaiList,
+		}
+		for i := range context.LadnPool[ladn.Dnn].TaiLists {
+			context.LadnPool[ladn.Dnn].TaiLists[i].Tac = TACConfigToModels(context.LadnPool[ladn.Dnn].TaiLists[i].Tac)
+		}
+	}
 }
 
 func getIntAlgOrder(integrityOrder []string) (intOrder []uint8) {

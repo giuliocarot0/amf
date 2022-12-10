@@ -17,6 +17,7 @@ import (
 
 	"github.com/free5gc/amf/internal/context"
 	gmm_message "github.com/free5gc/amf/internal/gmm/message"
+	"github.com/free5gc/amf/internal/logger"
 	ngap_message "github.com/free5gc/amf/internal/ngap/message"
 	"github.com/free5gc/amf/internal/sbi/consumer"
 	"github.com/free5gc/amf/internal/sbi/producer/callback"
@@ -1339,6 +1340,7 @@ func assignLadnInfo(ue *context.AmfUe, accessType models.AccessType) {
 		// request for LADN information
 		if ue.RegistrationRequest.LADNIndication.GetLen() == 0 {
 			if ue.HasWildCardSubscribedDNN() {
+				logger.GmmLog.Debugf("UE has wildcard dnn -> appending LADN info")
 				for _, ladn := range amfSelf.LadnPool {
 					if ue.TaiListInRegistrationArea(ladn.TaiLists, accessType) {
 						ue.LadnInfo = append(ue.LadnInfo, *ladn)
@@ -1348,7 +1350,11 @@ func assignLadnInfo(ue *context.AmfUe, accessType models.AccessType) {
 				for _, snssaiInfos := range ue.SmfSelectionData.SubscribedSnssaiInfos {
 					for _, dnnInfo := range snssaiInfos.DnnInfos {
 						if ladn, ok := amfSelf.LadnPool[dnnInfo.Dnn]; ok { // check if this dnn is a ladn
+							logger.CfgLog.Infof("Has LADN Info %s", ladn.Dnn)
+							logger.CfgLog.Infof("Has LADN TAC %s", ladn.TaiLists[0].Tac)
+
 							if ue.TaiListInRegistrationArea(ladn.TaiLists, accessType) {
+								logger.CfgLog.Infof("Has LADN in registration area %s", ladn.Dnn)
 								ue.LadnInfo = append(ue.LadnInfo, *ladn)
 							}
 						}

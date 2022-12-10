@@ -74,6 +74,7 @@ type Configuration struct {
 	SupportTAIList                  []models.Tai              `yaml:"supportTaiList,omitempty" valid:"required"`
 	PlmnSupportList                 []PlmnSupportItem         `yaml:"plmnSupportList,omitempty" valid:"required"`
 	SupportDnnList                  []string                  `yaml:"supportDnnList,omitempty" valid:"required"`
+	SupportLADNList                 []LadnItem                `yaml:"supportLADNList,omitempty" valid:"required"`
 	NrfUri                          string                    `yaml:"nrfUri,omitempty" valid:"required, url"`
 	Security                        *Security                 `yaml:"security,omitempty" valid:"required"`
 	NetworkName                     NetworkName               `yaml:"networkName,omitempty" valid:"required"`
@@ -496,6 +497,18 @@ func (t *TimerValue) validate() (bool, error) {
 		return false, appendInvalid(err)
 	}
 
+	return true, nil
+}
+
+type LadnItem struct {
+	Dnn     string       `yaml:"dnn" valid:"type(string)"`
+	TaiList []models.Tai `yaml:"taiList" valid:"required"`
+}
+
+func (l *LadnItem) validate() (bool, error) {
+	if _, err := govalidator.ValidateStruct(l); err != nil {
+		return false, appendInvalid(err)
+	}
 	return true, nil
 }
 
