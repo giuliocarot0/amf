@@ -87,3 +87,23 @@ func DetachSourceUeTargetUe(ranUe *RanUe) {
 		source.TargetUe = nil
 	}
 }
+
+func CheckIfLADNAndSetInfo(ue *AmfUe, smCtx *SmContext, dnn string) {
+	/* When receiving PDU Session Establishment with LADN DNN or Service Request for the established PDU Session
+	corresponding to LADN, the AMF determines UE presence in LADN service area and forwards it to the SMF if the
+	requested DNN is configured at the AMF as a LADN DNN. */
+	isLadn := false
+	isInServiceArea := false
+	if _, ok := ue.ServingAMF().LadnPool[dnn]; ok {
+		// the requested dnn is a ladn -> check whether the UE is in LADN Service Area
+		isLadn = true
+		logger.ContextLog.Debugf("Verifying UE Presence in LADN Service Area [%s]", dnn)
+
+		for i := range ue.LadnInfo {
+			isInServiceArea = (ue.LadnInfo[i].Dnn == dnn)
+		}
+	}
+	if isLadn {
+		smCtx.SetPresenceInLadn(isInServiceArea)
+	}
+}

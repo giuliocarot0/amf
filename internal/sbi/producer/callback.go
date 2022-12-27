@@ -119,7 +119,9 @@ func SmContextStatusNotifyProcedure(guti string, pduSessionID int32,
 						smContext.ULNASTransport().GetPayloadContainerContents(), pduSessionID, cause, nil, 0)
 					return
 				}
-
+				// After that the AMF has successfully selected the SMF, verifies accordingly to its local configuration, whether the dnn is a LADN or not
+				// if so, the AMF sets up the presenceInLADN parameter in the smContext object.
+				context.CheckIfLADNAndSetInfo(ue, newSmContext, dnn)
 				response, smContextRef, errResponse, problemDetail, err := consumer.SendCreateSmContextRequest(
 					ue, newSmContext, nil, smMessage)
 				if response != nil {
@@ -130,6 +132,7 @@ func SmContextStatusNotifyProcedure(guti string, pduSessionID int32,
 					// TODO: handle response(response N2SmInfo to RAN if exists)
 				} else if errResponse != nil {
 					ue.ProducerLog.Warnf("PDU Session Establishment Request is rejected by SMF[pduSessionId:%d]\n", pduSessionID)
+					ue.SmContextList.Delete(pduSessionID)
 					gmm_message.SendDLNASTransport(ue.RanUe[smContext.AccessType()],
 						nasMessage.PayloadContainerTypeN1SMInfo, errResponse.BinaryDataN1SmMessage, pduSessionID, 0, nil, 0)
 				} else if err != nil {

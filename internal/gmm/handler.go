@@ -219,6 +219,9 @@ func transport5GSMMessage(ue *context.AmfUe, anType models.AccessType,
 				} else {
 					ue.Lock.Lock()
 					defer ue.Lock.Unlock()
+					// After that the AMF has successfully selected the SMF, verifies accordingly to its local configuration, whether the dnn is a LADN or not
+					// if so, the AMF sets up the presenceInLADN parameter in the smContext object.
+					context.CheckIfLADNAndSetInfo(ue, newSmContext, dnn)
 					_, smContextRef, errResponse, problemDetail, err :=
 						consumer.SendCreateSmContextRequest(ue, newSmContext, nil, smMessage)
 					if err != nil {
@@ -226,7 +229,14 @@ func transport5GSMMessage(ue *context.AmfUe, anType models.AccessType,
 						return nil
 					} else if problemDetail != nil {
 						// TODO: error handling
+						if problemDetail.Cause == "OUT_OF_LADN_SERVICE_AREA" {
+							//manage the OUT OF LADN Area case
+							ue.SmContextList.Delete(pduSessionID)
+							gmm_message.SendDLNASTransport(ue.RanUe[anType], nasMessage.PayloadContainerTypeN1SMInfo,
+								errResponse.BinaryDataN1SmMessage, pduSessionID, nasMessage.Cause5GMMLADNNotAvailable, nil, 0)
+						}
 						return fmt.Errorf("Failed to Create smContext[pduSessionID: %d], Error[%v]", pduSessionID, problemDetail)
+
 					} else if errResponse != nil {
 						ue.GmmLog.Warnf("PDU Session Establishment Request is rejected by SMF[pduSessionId:%d]",
 							pduSessionID)
@@ -297,6 +307,7 @@ func forward5GSMMessageToSMF(
 		smContextUpdateData.AnType = accessType
 	}
 
+	context.CheckIfLADNAndSetInfo(ue, smContext, smContext.Dnn())
 	response, errResponse, problemDetail, err := consumer.SendUpdateSmContextRequest(smContext,
 		smContextUpdateData, smMessage, nil)
 
@@ -814,6 +825,9 @@ func HandleMobilityAndPeriodicRegistrationUpdating(ue *context.AmfUe, anType mod
 				if smContext, ok := ue.SmContextFindByPDUSessionID(pduSessionId); ok {
 					// uplink data are pending for the corresponding PDU session identity
 					if hasUplinkData && smContext.AccessType() == models.AccessType__3_GPP_ACCESS {
+						// After that the AMF has successfully selected the SMF, verifies accordingly to its local configuration, whether the dnn is a LADN or not
+						// if so, the AMF sets up the presenceInLADN parameter in the smContext object.
+						context.CheckIfLADNAndSetInfo(ue, smContext, smContext.Dnn())
 						response, errResponse, problemDetail, err := consumer.SendUpdateSmContextActivateUpCnxState(
 							ue, smContext, anType)
 						if response == nil {
@@ -1350,11 +1364,8 @@ func assignLadnInfo(ue *context.AmfUe, accessType models.AccessType) {
 				for _, snssaiInfos := range ue.SmfSelectionData.SubscribedSnssaiInfos {
 					for _, dnnInfo := range snssaiInfos.DnnInfos {
 						if ladn, ok := amfSelf.LadnPool[dnnInfo.Dnn]; ok { // check if this dnn is a ladn
-							logger.CfgLog.Infof("Has LADN Info %s", ladn.Dnn)
-							logger.CfgLog.Infof("Has LADN TAC %s", ladn.TaiLists[0].Tac)
-
 							if ue.TaiListInRegistrationArea(ladn.TaiLists, accessType) {
-								logger.CfgLog.Infof("Has LADN in registration area %s", ladn.Dnn)
+								logger.GmmLog.Infof("Has LADN in registration area %s", ladn.Dnn)
 								ue.LadnInfo = append(ue.LadnInfo, *ladn)
 							}
 						}

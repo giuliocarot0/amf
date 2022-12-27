@@ -11,15 +11,15 @@ type SmContext struct {
 	mu sync.RWMutex // protect the following fields
 
 	// pdu session information
-	pduSessionID int32
-	smContextRef string
-	snssai       models.Snssai
-	dnn          string
-	accessType   models.AccessType
-	nsInstance   string
-	userLocation models.UserLocation
-	plmnID       models.PlmnId
-
+	pduSessionID   int32
+	smContextRef   string
+	snssai         models.Snssai
+	dnn            string
+	accessType     models.AccessType
+	nsInstance     string
+	userLocation   models.UserLocation
+	plmnID         models.PlmnId
+	presenceInLadn models.PresenceState
 	// SMF information
 	smfID  string
 	smfUri string
@@ -46,6 +46,20 @@ func (c *SmContext) SetPduSessionID(id int32) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.pduSessionID = id
+}
+func (c *SmContext) SetPresenceInLadn(presence bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if presence {
+		c.presenceInLadn = models.PresenceState_IN_AREA
+	} else {
+		c.presenceInLadn = models.PresenceState_OUT_OF_AREA
+	}
+}
+func (c *SmContext) PresenceInLadn() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return string(c.presenceInLadn)
 }
 
 func (c *SmContext) SmContextRef() string {

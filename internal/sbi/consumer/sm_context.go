@@ -2,11 +2,12 @@ package consumer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strconv"
 	"time"
-    "encoding/json"
+
 	"github.com/antihax/optional"
 
 	amf_context "github.com/free5gc/amf/internal/context"
@@ -168,6 +169,9 @@ func buildCreateSmContextRequest(ue *amf_context.AmfUe, smContext *amf_context.S
 	smContextCreateData.ServingNetwork = context.ServedGuamiList[0].PlmnId
 	if requestType != nil {
 		smContextCreateData.RequestType = *requestType
+	}
+	if smContext.PresenceInLadn() != "" {
+		smContextCreateData.PresenceInLadn = models.PresenceState(smContext.PresenceInLadn())
 	}
 	smContextCreateData.N1SmMsg = new(models.RefToBinaryData)
 	smContextCreateData.N1SmMsg.ContentId = "n1SmMsg"
